@@ -3,9 +3,9 @@ use std::path::Path;
 use glfw::Context;
 // use glutin::{event_loop::{EventLoop, ControlFlow}, ContextBuilder, GlRequest, Api, event::{Event, WindowEvent}, window::WindowBuilder, dpi::PhysicalSize};
 use gl;
-use nalgebra::{Perspective3, Matrix4, Translation3, Matrix, Vector4, Vector3, Rotation3, Isometry3, Point3, Projective3};
+use nalgebra::{Perspective3, Vector3, Isometry3, Point3, UnitQuaternion};
 
-use voxel_game::{Shader, Texture, ColoredMesh, TexturedMesh, cube_mesh};
+use voxel_game::{Shader, Texture, cube_mesh};
 
 
 fn main() {
@@ -29,6 +29,7 @@ fn main() {
         gl::Viewport(0, 0, screen_width as i32, screen_height as i32);
         gl::Enable(gl::TEXTURE_2D);
         gl::Enable(gl::DEPTH_TEST);
+        gl::Enable(gl::CULL_FACE);
         gl::DepthFunc(gl::LESS);
     }
 
@@ -52,23 +53,24 @@ fn main() {
     ];
 
     let uvs: [f32; VERTEX_COUNT*2] = [
-        0.0, 0.0,
-        1.0, 0.0,
         0.0, 1.0,
-        0.0, 1.0,
-        1.0, 0.0,
         1.0, 1.0,
+        0.0, 0.0,
+        0.0, 0.0,
+        1.0, 1.0,
+        1.0, 0.0,
     ];
 
     let texture = Texture::new(&Path::new("resources/texture/cobblestone.png"));
 
-    let shader = Shader::from_file("resources/shader/default.vert", "resources/shader/default.frag");  
-    let mesh = ColoredMesh::new(VERTEX_COUNT as i32, &vertices, &colors);
+    // let shader = Shader::from_file("resources/shader/default.vert", "resources/shader/default.frag");  
+    // let mesh = ColoredMesh::new(VERTEX_COUNT as i32, &vertices, &colors);
     
-    // let shader = Shader::from_file("resources/shader/textured.vert", "resources/shader/textured.frag");
+    let shader = Shader::from_file("resources/shader/textured.vert", "resources/shader/textured.frag");
     // let mesh = TexturedMesh::new(VERTEX_COUNT as i32, &vertices, &uvs, texture);
+    let mesh = cube_mesh(1.0, texture);
     
-    let model = Isometry3::new(nalgebra::zero(), nalgebra::zero());
+    let mut model = Isometry3::new(nalgebra::zero(), nalgebra::zero());
 
     let camera_pos = Point3::new(2.0, 2.0, 3.0);
     let look_at = Point3::new(0.0, 0.0, 0.0);
@@ -76,13 +78,15 @@ fn main() {
 
     let projection = Perspective3::new(screen_width as f32 / screen_height as f32, 3.14 / 2.0, 0.1, 1000.0);
 
-    let mvp = projection.as_matrix() * (view * model).to_homogeneous();
-
     while !window.should_close() {
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
             glfw_handle_event(&mut window, event);
         }
+
+        model.append_rotation_mut(&UnitQuaternion::from_euler_angles(0.0, 0.001, 0.0));
+
+        let mvp = projection.as_matrix() * (view * model).to_homogeneous();
 
         unsafe {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);

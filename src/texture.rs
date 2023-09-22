@@ -12,11 +12,11 @@ impl Texture {
         let mut id: GLuint = 0;
         let img: RgbaImage = image::open(path)
             .expect(format!("File {:?} does not exist", path).as_str())
-            .into_rgba8();        
+            .into_rgba8();
 
         unsafe {
-            gl::BindTexture(gl::TEXTURE_2D, id);
             gl::GenTextures(1, &mut id);
+            gl::BindTexture(gl::TEXTURE_2D, id);
             gl::TexImage2D(
                 gl::TEXTURE_2D,
                 0,
