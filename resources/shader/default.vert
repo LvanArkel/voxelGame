@@ -9,6 +9,5 @@ out vec3 frag_color;
 
 void main() {
     gl_Position = mvp * vec4(position, 1.0);
-    //gl_Position = vec4(position, 1.0);
     frag_color = color;
 }
