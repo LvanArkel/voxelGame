@@ -1,5 +1,6 @@
 use nalgebra::Vector3;
 
+#[derive(PartialEq, Eq)]
 pub enum Direction {
     Left, // Positive X
     Right, // Negative X
@@ -10,7 +11,7 @@ pub enum Direction {
 }
 
 impl Direction {
-    fn facing(&self) -> Vector3<i32> {
+    pub fn facing(&self) -> Vector3<i32> {
         match self {
             Direction::Left => Vector3::x(),
             Direction::Right => -Vector3::x(),

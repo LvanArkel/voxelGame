@@ -69,8 +69,8 @@ fn main() {
             // let mut voxels = vec![None; (CHUNK_SIZE_X*CHUNK_SIZE_Y*CHUNK_SIZE_Z) as usize];
             // voxels[0] = Some(Voxel{});
             // voxels[1] = Some(Voxel{});
-            // voxels[CHUNK_SIZE_X] = Some(Voxel{});
-            // voxels[CHUNK_SIZE_X*CHUNK_SIZE_Y] = Some(Voxel{});
+            // voxels[CHUNK_SIZE_X as usize] = Some(Voxel{});
+            // voxels[(CHUNK_SIZE_X*CHUNK_SIZE_Y) as usize] = Some(Voxel{});
             // let chunk = Chunk::new(voxels);
             let chunk = Chunk::new(vec![Some(Voxel{}); (CHUNK_SIZE_X*CHUNK_SIZE_Y*CHUNK_SIZE_Z) as usize]);
             chunk_row.push(chunk);
@@ -95,7 +95,9 @@ fn main() {
     let camera = Camera::new_look_at(
         screen_width, screen_height,
         &Point3::new(4.0, 12.0, -8.0),
+        // &Point3::new(-2.0, 4.0, -3.0),
         &Point3::new(16.0, 4.0, 16.0),   
+        // &Point3::new(0.5,0.5,0.5),
     );
 
     print_usage();
@@ -120,7 +122,7 @@ fn main() {
 
         for (z, mesh_row) in meshes.iter().enumerate() {
             for (x, mesh) in mesh_row.iter().enumerate() {
-                renderer.render(&Isometry3::translation((x*CHUNK_SIZE_X) as f32, 0.0, (z*CHUNK_SIZE_Z) as f32), mesh, &camera);
+                renderer.render(&Isometry3::translation((x*CHUNK_SIZE_X as usize) as f32, 0.0, (z*CHUNK_SIZE_Z as usize) as f32), mesh, &camera);
             }
         }
 

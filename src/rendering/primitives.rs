@@ -15,22 +15,22 @@ pub struct MeshData {
 
 pub fn cube() -> MeshData {
     let base_vertices: [Vector3<f32>; 8] = [
-        Vector3::new(0.0, 0.0, 0.0), // 0. Left bottom back
-        Vector3::new(1.0, 0.0, 0.0), // 1. Right bottom back
-        Vector3::new(0.0, 1.0, 0.0), // 2. Left top back
-        Vector3::new(1.0, 1.0, 0.0), // 3. Right top back
-        Vector3::new(0.0, 0.0, 1.0), // 4. Left bottom front
-        Vector3::new(1.0, 0.0, 1.0), // 5. Right bottom front
-        Vector3::new(0.0, 1.0, 1.0), // 6. Left top front
-        Vector3::new(1.0, 1.0, 1.0), // 7. Right top front
+        Vector3::new(1.0, 0.0, 1.0), // 0. Left bottom back
+        Vector3::new(0.0, 0.0, 1.0), // 1. Right bottom back
+        Vector3::new(1.0, 1.0, 1.0), // 2. Left top back
+        Vector3::new(0.0, 1.0, 1.0), // 3. Right top back
+        Vector3::new(1.0, 0.0, 0.0), // 4. Left bottom front
+        Vector3::new(0.0, 0.0, 0.0), // 5. Right bottom front
+        Vector3::new(1.0, 1.0, 0.0), // 6. Left top front
+        Vector3::new(0.0, 1.0, 0.0), // 7. Right top front
     ];
     let vertex_indices: [usize; VERTEX_COUNT] = [
-        1, 0, 3, 2, //Back
-        0, 1, 4, 5, //Bottom
         0, 4, 2, 6, //Left
         5, 1, 7, 3, //Right
-        4, 5, 6, 7, //Front
         6, 7, 2, 3, //Top
+        0, 1, 4, 5, //Bottom
+        1, 0, 3, 2, //Back
+        4, 5, 6, 7, //Front
     ];
     let index_pattern: [u32; 6] = [0, 1, 2, 2, 1, 3];
     let mut vertices = Vec::with_capacity(VERTEX_COUNT);
