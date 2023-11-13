@@ -1,18 +1,16 @@
 use std::path::Path;
 
 use gl::types::GLuint;
-use image::{RgbaImage, EncodableLayout};
+use image::{RgbaImage, EncodableLayout, ImageError};
 
 pub struct Texture {
     id: GLuint
 }
 
 impl Texture {
-    pub fn new(path: &Path) -> Self {
+    pub fn new(path: &Path) -> Result<Self, ImageError> {
         let mut id: GLuint = 0;
-        let img: RgbaImage = image::open(path)
-            .expect(format!("File {:?} does not exist", path).as_str())
-            .into_rgba8();
+        let img: RgbaImage = image::open(path)?.into_rgba8();
 
         unsafe {
             gl::GenTextures(1, &mut id);
@@ -32,7 +30,7 @@ impl Texture {
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
         }
 
-        Self { id }
+        Ok(Self { id })
     }
     pub fn bind(&self) {
         unsafe {

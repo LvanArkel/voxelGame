@@ -1,12 +1,36 @@
-use std::path::Path;
+use std::{path::Path, time::Instant};
 
 use glfw::Context;
-// use glutin::{event_loop::{EventLoop, ControlFlow}, ContextBuilder, GlRequest, Api, event::{Event, WindowEvent}, window::WindowBuilder, dpi::PhysicalSize};
 use gl;
-use nalgebra::{Perspective3, Vector3, Isometry3, Point3, UnitQuaternion};
+use nalgebra::{Isometry3, Point3};
 
-use voxel_game::{Shader, Texture, cube_mesh};
+use voxel_game::{asset::{Shader, Texture}, camera::Camera, rendering::{MeshRenderer, Mesh}, world::{chunk::{Chunk, CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z}, voxel::Voxel}};
 
+struct WindowSettings {
+    wireframe: bool,
+}
+
+impl WindowSettings {
+    fn new() -> Self { Self { wireframe: false } }
+
+    fn toggle_wireframe(&mut self) {
+        self.wireframe = !self.wireframe;
+        if self.wireframe {
+            unsafe {
+                gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+            }
+        } else {
+            unsafe {
+                gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+            }
+        }
+    }
+}
+
+fn print_usage() {
+    println!("Controls:");
+    println!("Y - toggle wireframe mode");
+}
 
 fn main() {
     let mut glfw = glfw::init(glfw::fail_on_errors).unwrap();
@@ -33,84 +57,78 @@ fn main() {
         gl::DepthFunc(gl::LESS);
     }
 
-    const VERTEX_COUNT: usize = 6;
-    let vertices: [f32;VERTEX_COUNT*3] = [
-        -1.0, -1.0, 0.0,
-         1.0, -1.0, 0.0,
-        -1.0,  1.0, 0.0,
-        -1.0,  1.0, 0.0,
-         1.0, -1.0, 0.0,
-         1.0,  1.0, 0.0,
-    ];
+    let mut window_settings = WindowSettings::new();
 
-    let colors: [f32; VERTEX_COUNT*3] = [
-        1.0, 0.0, 0.0,
-        0.0, 1.0, 0.0,
-        0.0, 0.0, 1.0,
-        0.0, 0.0, 1.0,
-        0.0, 1.0, 0.0,
-        1.0, 1.0, 1.0,
-    ];
-
-    let uvs: [f32; VERTEX_COUNT*2] = [
-        0.0, 1.0,
-        1.0, 1.0,
-        0.0, 0.0,
-        0.0, 0.0,
-        1.0, 1.0,
-        1.0, 0.0,
-    ];
-
-    let texture = Texture::new(&Path::new("resources/texture/cobblestone.png"));
-
-    // let shader = Shader::from_file("resources/shader/default.vert", "resources/shader/default.frag");  
-    // let mesh = ColoredMesh::new(VERTEX_COUNT as i32, &vertices, &colors);
-    
+    // let texture = Texture::new(&Path::new("resources/texture/cobblestone.png"));
     let shader = Shader::from_file("resources/shader/textured.vert", "resources/shader/textured.frag");
-    // let mesh = TexturedMesh::new(VERTEX_COUNT as i32, &vertices, &uvs, texture);
-    let mesh = cube_mesh(1.0, texture);
     
-    let mut model = Isometry3::new(nalgebra::zero(), nalgebra::zero());
+    let mut chunks: Vec<Vec<Chunk>> = Vec::new();
+    for _ in 0..4 {
+        let mut chunk_row = Vec::new();
+        for _ in 0..4 {
+            // let mut voxels = vec![None; (CHUNK_SIZE_X*CHUNK_SIZE_Y*CHUNK_SIZE_Z) as usize];
+            // voxels[0] = Some(Voxel{});
+            // voxels[1] = Some(Voxel{});
+            // voxels[CHUNK_SIZE_X] = Some(Voxel{});
+            // voxels[CHUNK_SIZE_X*CHUNK_SIZE_Y] = Some(Voxel{});
+            // let chunk = Chunk::new(voxels);
+            let chunk = Chunk::new(vec![Some(Voxel{}); (CHUNK_SIZE_X*CHUNK_SIZE_Y*CHUNK_SIZE_Z) as usize]);
+            chunk_row.push(chunk);
+        }
+        chunks.push(chunk_row);
+    }
 
-    let camera_pos = Point3::new(2.0, 2.0, 3.0);
-    let look_at = Point3::new(0.0, 0.0, 0.0);
-    let view = Isometry3::look_at_rh(&camera_pos, &look_at, &Vector3::y());
+    let meshes: Vec<Vec<Mesh>> = chunks
+        .iter()
+        .map(|chunk_row| 
+            chunk_row
+                .iter()
+                .map(|chunk| {
+                    let texture = Texture::new(&Path::new("resources/texture/cobblestone.png")).unwrap();
+                    chunk.generate_mesh(texture)
+                }).collect()).collect();
 
-    let projection = Perspective3::new(screen_width as f32 / screen_height as f32, 3.14 / 2.0, 0.1, 1000.0);
+    // let chunk = Chunk::new(voxels);
+    // let chunk_mesh = chunk.generate_mesh(texture);
+    let renderer = MeshRenderer::new(shader);
 
+    let camera = Camera::new_look_at(
+        screen_width, screen_height,
+        &Point3::new(4.0, 12.0, -8.0),
+        &Point3::new(16.0, 4.0, 16.0),   
+    );
+
+    print_usage();
+
+    let mut instant = Instant::now();
+    let mut fps = 0.0;
     while !window.should_close() {
+        let elapsed = instant.elapsed();
+        let delta = elapsed.as_secs_f32();
+        fps = 0.95 * fps + 0.05 * (1.0/delta);
+        window.set_title(format!("{}", fps).as_str());
+        instant = Instant::now();
+
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
-            glfw_handle_event(&mut window, event);
+            glfw_handle_event(&mut window, event, &mut window_settings);
         }
-
-        model.append_rotation_mut(&UnitQuaternion::from_euler_angles(0.0, 0.001, 0.0));
-
-        let mvp = projection.as_matrix() * (view * model).to_homogeneous();
 
         unsafe {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-        // texture.bind();
-        shader.bind();
-        shader.uniform_mat4("mvp", mvp);
-        shader.uniform_int("texture0", 0);
-        mesh.draw();
-        shader.unbind();
+        for (z, mesh_row) in meshes.iter().enumerate() {
+            for (x, mesh) in mesh_row.iter().enumerate() {
+                renderer.render(&Isometry3::translation((x*CHUNK_SIZE_X) as f32, 0.0, (z*CHUNK_SIZE_Z) as f32), mesh, &camera);
+            }
+        }
 
-        
         window.swap_buffers();
     }
 }
 
-pub fn gl_get_string<'a>(name: gl::types::GLenum) -> &'a str {
-    let v = unsafe { gl::GetString(name) };
-    let v: &std::ffi::CStr = unsafe { std::ffi::CStr::from_ptr(v as *const i8) };
-    v.to_str().unwrap()
-}
-
-fn glfw_handle_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
+fn glfw_handle_event(window: &mut glfw::Window, event: glfw::WindowEvent, window_settings: &mut WindowSettings) {
     use glfw::WindowEvent as Event;
     use glfw::Key;
     use glfw::Action;
@@ -119,6 +137,9 @@ fn glfw_handle_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
         Event::Key(Key::Escape, _, Action::Press, _) => {
             window.set_should_close(true);
         },
+        Event::Key(Key::Y, _, Action::Press, _) => {
+            window_settings.toggle_wireframe();
+        }
         _ => {},
     }
 }

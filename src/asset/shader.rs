@@ -1,5 +1,5 @@
 use gl;
-use gl::types::{GLuint, GLint};
+use gl::types::GLuint;
 use nalgebra::Matrix4;
 use std::ffi::CString;
 use std::fs;

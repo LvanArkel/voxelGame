@@ -1,12 +1,11 @@
-mod mesh;
-pub use crate::mesh::ColoredMesh;
-pub use crate::mesh::TexturedMesh;
+pub mod asset;
 
-mod primitives;
-pub use crate::primitives::*;
+pub mod camera;
 
-mod shader;
-pub use crate::shader::Shader;
+pub mod math;
 
-mod texture;
-pub use crate::texture::Texture;
+pub mod rendering;
+
+pub mod transform;
+
+pub mod world;
